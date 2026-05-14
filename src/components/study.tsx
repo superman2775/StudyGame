@@ -15,6 +15,8 @@ function normalize(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
+type PracticeMode = 'typing' | 'flashcard' | 'multiple-choice'
+
 function pickSession(deck: Deck, count: number): SessionCard[] {
   const today = todayISO()
   const due = deck.cards.filter((c) => isDue(c, today))
@@ -50,12 +52,14 @@ export function StudyView({
   )
 
   const [sessionSize, setSessionSize] = useState(12)
+  const [mode, setMode] = useState<PracticeMode>('typing')
   const [session, setSession] = useState<SessionCard[] | null>(null)
   const [index, setIndex] = useState(0)
   const [input, setInput] = useState('')
   const [revealed, setRevealed] = useState(false)
   const [combo, setCombo] = useState(0)
   const [score, setScore] = useState({ correct: 0, incorrect: 0 })
+  const [choice, setChoice] = useState<string | null>(null)
 
   const inputRef = useRef<HTMLInputElement | null>(null)
 
@@ -104,6 +108,18 @@ export function StudyView({
   const current = session?.[index] ?? null
   const done = session && index >= session.length
 
+  const choices = useMemo(() => {
+    if (!deck || !current || mode !== 'multiple-choice') return []
+    const correct = current.back
+    const pool = deck.cards
+      .map((c) => c.back)
+      .filter((b) => normalize(b) !== normalize(correct))
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 3)
+    const all = [correct, ...pool].sort(() => Math.random() - 0.5)
+    return all
+  }, [deck, current, mode])
+
   return (
     <div className="stack">
       <div className="panel">
@@ -116,6 +132,22 @@ export function StudyView({
           </div>
 
           <div className="row gap wrap">
+            <select
+              className="input"
+              value={mode}
+              onChange={(e) => {
+                setMode(e.target.value as PracticeMode)
+                setRevealed(false)
+                setChoice(null)
+                setInput('')
+              }}
+              aria-label="Practice mode"
+              style={{ width: 190 }}
+            >
+              <option value="typing">Typing</option>
+              <option value="flashcard">Flashcard</option>
+              <option value="multiple-choice">Multiple choice</option>
+            </select>
             <select
               className="input"
               value={deck.id}
@@ -138,6 +170,7 @@ export function StudyView({
                 setRevealed(false)
                 setCombo(0)
                 setScore({ correct: 0, incorrect: 0 })
+                setChoice(null)
               }}
               disabled={!session}
             >
@@ -180,6 +213,7 @@ export function StudyView({
                   setRevealed(false)
                   setCombo(0)
                   setScore({ correct: 0, incorrect: 0 })
+                  setChoice(null)
                 }}
                 disabled={deck.cards.length === 0}
               >
@@ -251,26 +285,51 @@ export function StudyView({
             <p className="muted small">Front</p>
             <h2 className="studyFront">{current.front}</h2>
 
-            <div className="stack">
-              <label className="muted small" htmlFor="answer">
-                Your answer
-              </label>
-              <input
-                id="answer"
-                ref={inputRef}
-                className="input"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    setRevealed(true)
-                  }
-                }}
-                placeholder="Type it, then press Enter…"
-                disabled={revealed}
-              />
-            </div>
+            {mode === 'typing' ? (
+              <div className="stack">
+                <label className="muted small" htmlFor="answer">
+                  Your answer
+                </label>
+                <input
+                  id="answer"
+                  ref={inputRef}
+                  className="input"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      setRevealed(true)
+                    }
+                  }}
+                  placeholder="Type it, then press Enter…"
+                  disabled={revealed}
+                />
+              </div>
+            ) : null}
+
+            {mode === 'multiple-choice' ? (
+              <div className="stack">
+                <p className="muted small">Pick the best answer</p>
+                <div className="choiceGrid" role="list" aria-label="Choices">
+                  {choices.map((c) => (
+                    <button
+                      key={c}
+                      className={choice === c ? 'choice active' : 'choice'}
+                      type="button"
+                      onClick={() => {
+                        setChoice(c)
+                        setRevealed(true)
+                      }}
+                      disabled={revealed}
+                      role="listitem"
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             {!revealed ? (
               <div className="row gap wrap">
@@ -289,6 +348,7 @@ export function StudyView({
                     setIndex((i) => i + 1)
                     setInput('')
                     setRevealed(false)
+                    setChoice(null)
                   }}
                 >
                   Skip
@@ -298,42 +358,57 @@ export function StudyView({
               <div className="panel inset">
                 <p className="muted small">Back</p>
                 <p className="answerText">{current.back}</p>
-                <p className="muted small">
-                  Your answer: <span className="mono">{input || '—'}</span>
-                </p>
+                {mode === 'typing' ? (
+                  <p className="muted small">
+                    Your answer: <span className="mono">{input || '—'}</span>
+                  </p>
+                ) : null}
+                {mode === 'multiple-choice' ? (
+                  <p className="muted small">
+                    Your choice: <span className="mono">{choice || '—'}</span>
+                  </p>
+                ) : null}
 
                 <div className="row gap wrap">
-                  <button
-                    className="btn primary"
-                    type="button"
-                    onClick={() => {
-                      const correct = normalize(input) === normalize(current.back)
-                      const nextDeck: Deck = {
-                        ...deck,
-                        updatedISO: todayISO(),
-                        cards: deck.cards.map((c) =>
-                          c.id === current.id ? gradeCard(c, correct) : c,
-                        ),
-                      }
-                      onDeckUpdate(nextDeck)
+                  {mode !== 'flashcard' ? (
+                    <button
+                      className="btn primary"
+                      type="button"
+                      onClick={() => {
+                        const computed =
+                          mode === 'multiple-choice'
+                            ? normalize(choice || '') === normalize(current.back)
+                            : normalize(input) === normalize(current.back)
+                        const nextDeck: Deck = {
+                          ...deck,
+                          updatedISO: todayISO(),
+                          cards: deck.cards.map((c) =>
+                            c.id === current.id ? gradeCard(c, computed) : c,
+                          ),
+                        }
+                        onDeckUpdate(nextDeck)
 
-                      const baseXp = correct ? 12 : 4
-                      const comboBonus = correct ? Math.min(10, combo) : 0
-                      onEarnXp(baseXp + comboBonus, true)
+                        const baseXp = computed ? 12 : 4
+                        const comboBonus = computed ? Math.min(10, combo) : 0
+                        onEarnXp(baseXp + comboBonus, true)
 
-                      setScore((s) =>
-                        correct
-                          ? { ...s, correct: s.correct + 1 }
-                          : { ...s, incorrect: s.incorrect + 1 },
-                      )
-                      setCombo((c) => (correct ? c + 1 : 0))
-                      setIndex((i) => i + 1)
-                      setInput('')
-                      setRevealed(false)
-                    }}
-                  >
-                    Auto grade
-                  </button>
+                        setScore((s) =>
+                          computed
+                            ? { ...s, correct: s.correct + 1 }
+                            : { ...s, incorrect: s.incorrect + 1 },
+                        )
+                        setCombo((c) => (computed ? c + 1 : 0))
+                        setIndex((i) => i + 1)
+                        setInput('')
+                        setChoice(null)
+                        setRevealed(false)
+                      }}
+                      disabled={mode === 'multiple-choice' && !choice}
+                      title={mode === 'multiple-choice' && !choice ? 'Pick an answer first' : ''}
+                    >
+                      Auto grade
+                    </button>
+                  ) : null}
 
                   <button
                     className="btn"
@@ -352,6 +427,7 @@ export function StudyView({
                       setCombo((c) => c + 1)
                       setIndex((i) => i + 1)
                       setInput('')
+                      setChoice(null)
                       setRevealed(false)
                     }}
                   >
@@ -375,6 +451,7 @@ export function StudyView({
                       setCombo(0)
                       setIndex((i) => i + 1)
                       setInput('')
+                      setChoice(null)
                       setRevealed(false)
                     }}
                   >

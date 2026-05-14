@@ -13,9 +13,10 @@ function parseImport(text: string): Array<{ front: string; back: string }> {
 
   const pairs: Array<{ front: string; back: string }> = []
   for (const line of lines) {
-    const [frontRaw, backRaw] = line.split('\t')
-    const front = (frontRaw ?? '').trim()
-    const back = (backRaw ?? '').trim()
+    const idx = line.indexOf(':')
+    if (idx <= 0) continue
+    const front = line.slice(0, idx).trim()
+    const back = line.slice(idx + 1).trim()
     if (!front || !back) continue
     pairs.push({ front, back })
   }
@@ -86,7 +87,7 @@ export function DecksView({
       {sorted.length === 0 ? (
         <EmptyState
           title="No decks yet"
-          body="Create a deck to start. Tip: import cards with TAB-separated lines."
+          body='Create a deck to start. Tip: import cards as "front: back" (one per line).'
         />
       ) : (
         <div className="grid3">
@@ -158,6 +159,24 @@ function DeckEditor({
   const [back, setBack] = useState('')
   const [importText, setImportText] = useState('')
 
+  function downloadText(filename: string, contents: string) {
+    const blob = new Blob([contents], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function exportAsColon(deck: Deck): string {
+    return deck.cards.map((c) => `${c.front}: ${c.back}`).join('\n') + '\n'
+  }
+
+  function exportAsJson(deck: Deck): string {
+    return JSON.stringify(deck, null, 2) + '\n'
+  }
+
   return (
     <div className="modalBackdrop" role="dialog" aria-modal="true">
       <div className="modal">
@@ -219,13 +238,13 @@ function DeckEditor({
           <div className="panel">
             <h3>Import (TAB-separated)</h3>
             <p className="muted small">
-              One card per line: <code>front</code> TAB <code>back</code>
+              One card per line: <code>front</code>: <code>back</code>
             </p>
             <textarea
               className="textarea"
               value={importText}
               onChange={(e) => setImportText(e.target.value)}
-              placeholder={'Capital of France?\tParis\n2+2?\t4'}
+              placeholder={'Capital of France?: Paris\n2+2?: 4'}
               rows={7}
             />
             <div className="row gap wrap">
@@ -258,6 +277,47 @@ function DeckEditor({
               </button>
             </div>
           </div>
+        </div>
+
+        <div className="divider" />
+
+        <div className="panel">
+          <div className="row between gap wrap">
+            <h3>Export</h3>
+            <div className="row gap wrap">
+              <button
+                className="btn"
+                type="button"
+                onClick={() =>
+                  downloadText(
+                    `${deck.name.replaceAll(' ', '_')}.txt`,
+                    exportAsColon(deck),
+                  )
+                }
+                disabled={deck.cards.length === 0}
+                title={deck.cards.length === 0 ? 'Add cards first' : ''}
+              >
+                Export .txt
+              </button>
+              <button
+                className="btn"
+                type="button"
+                onClick={() =>
+                  downloadText(
+                    `${deck.name.replaceAll(' ', '_')}.json`,
+                    exportAsJson(deck),
+                  )
+                }
+                disabled={deck.cards.length === 0}
+                title={deck.cards.length === 0 ? 'Add cards first' : ''}
+              >
+                Export .json
+              </button>
+            </div>
+          </div>
+          <p className="muted small">
+            Text export uses <code>front</code>: <code>back</code> per line.
+          </p>
         </div>
 
         <div className="divider" />

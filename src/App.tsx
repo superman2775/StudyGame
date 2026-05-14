@@ -153,7 +153,7 @@ function App() {
 
       <footer className="footer">
         <p className="muted small">
-          Tip: import cards as <code>front</code> TAB <code>back</code>. Your
+          Tip: import cards as <code>front</code>: <code>back</code>. Your
           progress saves automatically in this browser.
         </p>
       </footer>
@@ -162,4 +162,3 @@ function App() {
 }
 
 export default App
-
