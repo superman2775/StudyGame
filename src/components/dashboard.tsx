@@ -3,7 +3,6 @@ import { isDue } from '../lib/spaced'
 import { todayISO } from '../lib/time'
 import type { Deck, Profile } from '../lib/types'
 import { EmptyState } from './ui/empty-state'
-import { HeroScrollDemo } from './ui/hero-scroll-demo'
 
 function countDue(decks: Deck[]): number {
   const today = todayISO()
@@ -31,33 +30,65 @@ export function DashboardView({
 
   return (
     <div className="stack">
-      <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
-        <HeroScrollDemo />
-      </div>
+      <section className="heroSection panel">
+        <div className="heroGrid">
+          <div className="heroCopy">
+            <p className="kicker">Study, but make it a game</p>
+            <h1 className="heroTitle">Build a streak. Beat your backlog.</h1>
+            <p className="muted heroSubtitle">
+              StudyGame turns quick reviews into a loop you’ll actually stick
+              with: decks → rounds → XP → streak.
+            </p>
 
-      <div className="panel">
-        <div className="row between wrap gap">
-          <div>
-            <h1>StudyGame</h1>
-            <p className="muted">
-              Welcome back. Keep the streak alive and farm XP (the legal kind).
+            <div className="row gap wrap" style={{ marginTop: 14 }}>
+              <button className="btn primary" type="button" onClick={() => onGoStudy()}>
+                Start studying
+              </button>
+              <button className="btn" type="button" onClick={onGoDecks}>
+                Manage decks
+              </button>
+            </div>
+
+            <div className="pillRow" role="list" aria-label="Highlights">
+              <span className="pill" role="listitem">
+                Quick rounds
+              </span>
+              <span className="pill" role="listitem">
+                Due-first review
+              </span>
+              <span className="pill" role="listitem">
+                Combo XP
+              </span>
+            </div>
+          </div>
+
+          <div className="heroPreview" aria-label="Progress preview">
+            <div className="row between gap">
+              <span className="tag">Level</span>
+              <span className="tag">Streak</span>
+              <span className="tag">Due</span>
+            </div>
+            <div className="heroStats">
+              <div className="heroStat">
+                <div className="bigNumber">{profile.level}</div>
+                <p className="muted small">{profile.xp} XP</p>
+              </div>
+              <div className="heroStat">
+                <div className="bigNumber">{profile.streak}</div>
+                <p className="muted small">days</p>
+              </div>
+              <div className="heroStat">
+                <div className="bigNumber">{due}</div>
+                <p className="muted small">due today</p>
+              </div>
+            </div>
+            <div className="divider" />
+            <p className="muted small">
+              Tip: keep a combo in Study to earn bonus XP.
             </p>
           </div>
-          <div className="row gap wrap">
-            <button className="btn" type="button" onClick={onGoDecks}>
-              Manage decks
-            </button>
-            <button
-              className="btn primary"
-              type="button"
-              onClick={() => onGoStudy()}
-              disabled={decks.length === 0}
-            >
-              Start studying
-            </button>
-          </div>
         </div>
-      </div>
+      </section>
 
       <div className="grid3">
         <div className="card">
@@ -91,16 +122,25 @@ export function DashboardView({
           }
         />
       ) : (
-        <div className="panel">
-          <h2>Quick start</h2>
-          <p className="muted small">
-            Pick a deck and jump straight into a round.
-          </p>
-          <div className="row gap wrap">
+        <section className="panel">
+          <div className="row between wrap gap">
+            <div>
+              <h2>Quick start</h2>
+              <p className="muted small">
+                Pick a deck and jump straight into a round.
+              </p>
+            </div>
+            <div className="row gap wrap">
+              <span className="tag">{decks.length} deck{decks.length === 1 ? '' : 's'}</span>
+              <span className="tag">{totalCards} card{totalCards === 1 ? '' : 's'}</span>
+            </div>
+          </div>
+
+          <div className="row gap wrap" style={{ marginTop: 10 }}>
             {decks
               .slice()
               .sort((a, b) => b.updatedISO.localeCompare(a.updatedISO))
-              .slice(0, 8)
+              .slice(0, 10)
               .map((d) => (
                 <button
                   key={d.id}
@@ -114,7 +154,7 @@ export function DashboardView({
                 </button>
               ))}
           </div>
-        </div>
+        </section>
       )}
     </div>
   )

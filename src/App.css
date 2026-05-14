@@ -118,6 +118,83 @@
   gap: 14px;
 }
 
+.heroSection {
+  padding: 20px;
+}
+
+.heroGrid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 18px;
+  align-items: center;
+}
+
+.heroCopy {
+  text-align: left;
+}
+
+.kicker {
+  display: inline-flex;
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-h);
+  background: rgba(0, 0, 0, 0.02);
+  font-size: 14px;
+  letter-spacing: 0.2px;
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: 52px;
+  letter-spacing: -1.2px;
+  line-height: 1.05;
+}
+
+.heroSubtitle {
+  margin-top: 12px;
+  max-width: 60ch;
+}
+
+.pillRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.pill {
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.02);
+  color: var(--text-h);
+}
+
+.heroPreview {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 14px;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.heroStats {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.heroStat {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 10px;
+  background: var(--bg);
+  box-shadow: var(--shadow);
+}
+
 .row {
   display: flex;
   align-items: center;
@@ -386,6 +463,12 @@ select.input:focus-visible {
   .hud {
     display: none;
   }
+  .heroGrid {
+    grid-template-columns: 1fr;
+  }
+  .heroTitle {
+    font-size: 38px;
+  }
   .grid3 {
     grid-template-columns: 1fr;
   }
@@ -396,4 +479,3 @@ select.input:focus-visible {
     grid-template-columns: 1fr;
   }
 }
-
