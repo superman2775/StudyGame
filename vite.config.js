@@ -1,5 +1,6 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig(() => {
   const explicitBase = process.env.VITE_BASE?.trim()
@@ -15,6 +16,11 @@ export default defineConfig(() => {
 
   return {
     base,
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
+      },
+    },
     plugins: [react()],
   }
 })
